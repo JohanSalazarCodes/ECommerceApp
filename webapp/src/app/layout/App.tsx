@@ -13,29 +13,30 @@ import "react-toastify/dist/ReactToastify.css";
 import ServerError from "../../api/errors/ServerError";
 import NotFound from "../../api/errors/NotFound";
 import BasketPage from '../../features/basket/BasketPage';
-import { useStoreContext } from "../context/StoreContext";
 import { getCookie } from '../util/util';
 import agent from '../../api/agent';
 import LoadingComponent from "./LoadingComponent";
 import CheckoutPage from '../../features/checkout/CheckoutPage';
+import { useAppDispatch } from '../store/configureStore';
+import { setBasket } from "../../features/basket/basketSlice";
 
 function App() {
 
-  const { setBasket } = useStoreContext();
+  const distpatch = useAppDispatch();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const buyerId = getCookie('buyerId');
     if (buyerId) {
       agent.Basket.get()
-      .then(basket => setBasket(basket))
+      .then(basket => distpatch(setBasket(basket)))
       .catch(error => console.log(error))
       .finally(() => setLoading(false))
     }
     else{
       setLoading(false);
     }
-  }, [setBasket])
+  }, [distpatch])
 
   const [darkMode, setDarkMode] = useState(false);
   const palettleType = darkMode ? "dark" : "light";
