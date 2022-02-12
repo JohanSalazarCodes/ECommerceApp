@@ -2,7 +2,7 @@ import Catalog from "../../features/catalog/Catalog";
 import Header from "./Header";
 import { Container, createTheme, CssBaseline } from "@mui/material";
 import { ThemeProvider } from "@emotion/react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Route, Switch } from "react-router-dom";
 import HomePage from "../../features/home/HomePage";
 import ProductDetails from "../../features/catalog/ProductDetails";
@@ -13,30 +13,32 @@ import "react-toastify/dist/ReactToastify.css";
 import ServerError from "../../api/errors/ServerError";
 import NotFound from "../../api/errors/NotFound";
 import BasketPage from '../../features/basket/BasketPage';
-import { getCookie } from '../util/util';
-import agent from '../../api/agent';
 import LoadingComponent from "./LoadingComponent";
 import CheckoutPage from '../../features/checkout/CheckoutPage';
 import { useAppDispatch } from '../store/configureStore';
-import { setBasket } from "../../features/basket/basketSlice";
+import { fetchBasketAsync } from '../../features/basket/basketSlice';
+import Login from "../../features/account/Login";
+import Register from "../../features/account/Register";
+import { fetchCurrentUser } from '../../features/account/accountSlice';
+import PrivateRoute from './PrivateRoute';
 
 function App() {
 
   const distpatch = useAppDispatch();
   const [loading, setLoading] = useState(true);
 
+  const initApp = useCallback(async () => {
+    try {
+      await distpatch(fetchCurrentUser());
+      await distpatch(fetchBasketAsync());
+    } catch(error) {
+      console.log(error);
+    }
+  }, [distpatch]); 
+
   useEffect(() => {
-    const buyerId = getCookie('buyerId');
-    if (buyerId) {
-      agent.Basket.get()
-      .then(basket => distpatch(setBasket(basket)))
-      .catch(error => console.log(error))
-      .finally(() => setLoading(false))
-    }
-    else{
-      setLoading(false);
-    }
-  }, [distpatch])
+    initApp().then(() => setLoading(false));
+  }, [initApp])
 
   const [darkMode, setDarkMode] = useState(false);
   const palettleType = darkMode ? "dark" : "light";
@@ -70,7 +72,9 @@ function App() {
           <Route path="/contact" component={ContactPage} />
           <Route path="/server-error" component={ServerError} />
           <Route path="/basket" component={BasketPage} />
-          <Route path="/checkout" component={CheckoutPage} />
+          <PrivateRoute path="/checkout" component={CheckoutPage} />
+          <Route path="/login" component={Login} />
+          <Route path="/register" component={Register} />
           <Route component={NotFound} />
         </Switch>
       </Container>
